@@ -1,0 +1,50 @@
+name: PHP Vulnerability Scan (Windows Localhost)
+
+on:
+  push:
+    paths:
+      - '**.php'
+  pull_request:
+    paths:
+      - '**.php'
+
+jobs:
+  scan:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Scan PHP files with local Go server
+        shell: powershell
+        run: |
+          Write-Host "Scanning PHP files for vulnerabilities..."
+
+          $hasVulns = $false
+          $phpFiles = Get-ChildItem -Recurse -Filter *.php
+
+          foreach ($file in $phpFiles) {
+            $content = Get-Content $file.FullName -Raw
+            $jsonBody = @{ contents = $content } | ConvertTo-Json -Compress
+            Write-Host $jsonBody
+
+            $response = Invoke-RestMethod -Uri "http://localhost:3000/analyze" `
+                                           -Method POST `
+                                           -Body $jsonBody `
+                                           -ContentType "application/json"
+
+            $vulnCount = $response.vulns.Count
+            if ($vulnCount -gt 0) {
+              Write-Host "❌ Vulnerabilities found in $($file.FullName): $vulnCount"
+              Write-Host $response.everything
+              $hasVulns = $true
+            } else {
+              Write-Host "✅ No vulnerabilities in $($file.FullName)"
+            }
+          }
+
+          if ($hasVulns) {
+            Write-Error "Build failed due to vulnerabilities."
+            exit 1
+          }

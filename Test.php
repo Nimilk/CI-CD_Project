@@ -1,3 +1,3 @@
 <?php
-   $file = $_GET['filesss'];
+   $file = $_GET['filesxs'];
 ?>

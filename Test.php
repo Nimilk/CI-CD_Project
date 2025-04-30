@@ -1,4 +1,4 @@
 <?php
-   $file = $_GET['files'];
+   $file = $_GET['filesss'];
    include("pages/$file");
 ?>
